@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ubcaccessmap
+      POSTGRES_USER: ubcaccessmap
+      POSTGRES_PASSWORD: ubcaccessmap
+    ports:
+      - "5432:5432"
+    volumes:
+      - ubcaccessmap-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ubcaccessmap -d ubcaccessmap"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  ubcaccessmap-pg:

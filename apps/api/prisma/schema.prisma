@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum FactState {
+  yes
+  no
+  unknown
+}
+
+enum GenderType {
+  mens
+  womens
+  all_gender
+  private
+}
+
+enum Confidence {
+  low
+  medium
+  high
+}
+
+enum ReportStatus {
+  open
+  reviewed
+  dismissed
+}
+
+enum ReportType {
+  incorrect_access
+  closed
+  directions
+  other
+}
+
+model User {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  emailDomain String
+  displayName String
+  role        Role      @default(USER)
+  createdAt   DateTime  @default(now())
+  lastLoginAt DateTime?
+  sessions    Session[]
+  ratings     Rating[]
+  reports     Report[]
+}
+
+model MagicLinkToken {
+  id        String    @id @default(cuid())
+  email     String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email, createdAt])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Building {
+  id             String     @id @default(cuid())
+  sourceId       String     @unique
+  name           String
+  code           String?
+  centroidLat    Float
+  centroidLng    Float
+  footprint      Json
+  sourceUrl      String?
+  importedAt     DateTime?
+  stepFreeAccess FactState  @default(unknown)
+  hours          String?
+  washrooms      Washroom[]
+
+  @@index([centroidLat, centroidLng])
+  @@index([name])
+}
+
+model Washroom {
+  id            String               @id @default(cuid())
+  buildingId    String
+  building      Building             @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  name          String
+  floor         String
+  directions    String
+  genderType    GenderType
+  hours         String?
+  voteCount     Int                  @default(0)
+  bayesianScore Float?
+  rankLetter    String?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  attributes    WashroomAttribute[]
+  ratings       Rating[]
+  reports       Report[]
+
+  @@index([buildingId])
+}
+
+model WashroomAttribute {
+  id             String            @id @default(cuid())
+  washroomId     String
+  washroom       Washroom          @relation(fields: [washroomId], references: [id], onDelete: Cascade)
+  key            String
+  value          FactState
+  source         String
+  confidence     Confidence
+  lastVerifiedAt DateTime
+  createdAt      DateTime          @default(now())
+
+  @@unique([washroomId, key])
+}
+
+model Rating {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  washroomId   String
+  washroom     Washroom @relation(fields: [washroomId], references: [id], onDelete: Cascade)
+  cleanliness  Int
+  privacy      Int
+  availability Int
+  overall      Int
+  tags         String[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, washroomId])
+}
+
+model Report {
+  id           String       @id @default(cuid())
+  userId       String?
+  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  washroomId   String
+  washroom     Washroom     @relation(fields: [washroomId], references: [id], onDelete: Cascade)
+  type         ReportType
+  message      String
+  status       ReportStatus @default(open)
+  reviewerNote String?
+  createdAt    DateTime     @default(now())
+  reviewedAt   DateTime?
+
+  @@index([status, createdAt])
+}
+
+model DataImport {
+  id         String   @id @default(cuid())
+  sourceUrl  String
+  importedAt DateTime @default(now())
+  featureCount Int
+}
