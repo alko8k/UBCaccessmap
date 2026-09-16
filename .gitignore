@@ -9,3 +9,5 @@ coverage/
 playwright-report/
 test-results/
 apps/api/src/generated/
+# Session handoff notes; documents known bugs, kept out of the public repo.
+CLAUDE.md
