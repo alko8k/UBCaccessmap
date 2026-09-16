@@ -1,10 +1,19 @@
 generator client {
   provider = "prisma-client-js"
+  // rhel-openssl-3.0.x is the runtime Vercel's functions run on. Without it the
+  // query engine binary is absent in production and every request fails.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // Transaction-mode pooler (port 6543) for app queries.
+  url       = env("DATABASE_URL")
+  // Direct connection (port 5432) for migrations, which cannot run through a
+  // transaction pooler. Prisma requires this variable to exist once declared,
+  // so set it even locally; pointing it at the same string as DATABASE_URL is
+  // fine when not using a pooler.
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {
