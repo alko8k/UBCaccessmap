@@ -732,7 +732,7 @@ const buildings: BuildingSeed[] = [
     south: 49.269269,
     east: -123.249334,
     north: 49.269808,
-    stepFreeAccess: "unknown",
+    stepFreeAccess: "yes",
     hours: "Building hours not recorded.",
     washrooms: [
       {
@@ -747,6 +747,7 @@ const buildings: BuildingSeed[] = [
             // stall itself; grab bars, transfer space, sink height and door type
             // were not reported and stay unknown.
             accessibleStall: "yes",
+            stepFreeBuildingAccess: "yes",
             // Entry level, so no elevator serves it.
             elevatorAccess: "no",
           },
@@ -762,6 +763,7 @@ const buildings: BuildingSeed[] = [
         attributes: facts(
           {
             accessibleStall: "yes",
+            stepFreeBuildingAccess: "yes",
             // Entry level, so no elevator serves it.
             elevatorAccess: "no",
           },
@@ -777,6 +779,7 @@ const buildings: BuildingSeed[] = [
         attributes: facts(
           {
             accessibleStall: "yes",
+            stepFreeBuildingAccess: "yes",
             // Entry level, so no elevator serves it.
             elevatorAccess: "no",
           },
@@ -792,6 +795,7 @@ const buildings: BuildingSeed[] = [
         attributes: facts(
           {
             accessibleStall: "yes",
+            stepFreeBuildingAccess: "yes",
             // Entry level, so no elevator serves it.
             elevatorAccess: "no",
           },
