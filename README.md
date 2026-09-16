@@ -6,4 +6,3 @@ Use it when you need a place nearby, then check the access facts before you go: 
 
 This is a student project. It is not affiliated with the University of British Columbia.
 
-UBC Vancouver is on the traditional, ancestral, and unceded territory of the xʷməθkʷəy̓əm (Musqueam) people.
