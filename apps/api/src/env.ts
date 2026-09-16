@@ -8,6 +8,11 @@ const envSchema = z.object({
   API_ORIGIN: z.string().url().default("http://localhost:4000"),
   SESSION_SECRET: z.string().min(16),
   ADMIN_EMAILS: z.string().default(""),
+  SMTP_HOST: z.string().default("smtp.gmail.com"),
+  SMTP_PORT: z.coerce.number().default(465),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().optional(),
   COOKIE_SECURE: z
     .enum(["true", "false"])
     .optional()

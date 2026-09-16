@@ -12,6 +12,8 @@ const env: Env = {
   API_ORIGIN: "http://localhost:4000",
   SESSION_SECRET: "test-session-secret",
   ADMIN_EMAILS: "",
+  SMTP_HOST: "smtp.gmail.com",
+  SMTP_PORT: 465,
   COOKIE_SECURE: false,
 };
 

@@ -26,6 +26,8 @@ export function AuthDialog({ open, onClose }: Props) {
       await requestLink(email);
       setMessage("Check your inbox for a single-use sign-in link. It expires in 15 minutes.");
       if (import.meta.env.DEV) {
+        // Returns a link only while the API is falling back to the in-memory
+        // adapter; once SMTP is configured the mail is really sent.
         const inbox = await fetchDevMagicLink(email);
         setDevUrl(inbox.url);
       }
@@ -73,8 +75,8 @@ export function AuthDialog({ open, onClose }: Props) {
         </form>
         {message && <p role="status">{message}</p>}
         {devUrl && (
-          <p>
-            Dev inbox: <a href={devUrl}>Open magic link</a>
+          <p className="notice">
+            <a href={devUrl}>Open sign-in link →</a>
           </p>
         )}
       </div>
