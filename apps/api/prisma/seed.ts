@@ -1,9 +1,45 @@
 import "dotenv/config";
-import { PrismaClient, type FactState, type GenderType } from "@prisma/client";
+import { PrismaClient, type FactState, type GenderType, type Prisma } from "@prisma/client";
 import { ACCESSIBILITY_KEYS, BUILDING_SOURCE_URL } from "@ubc-access-map/shared";
-import { rectangleFootprint } from "../src/lib/geo.ts";
+import { centroidOfGeometry, rectangleFootprint } from "../src/lib/geo.ts";
 
 const prisma = new PrismaClient();
+
+type Footprint = { type: string; coordinates: unknown };
+
+/**
+ * Real UBC footprints, keyed by building code.
+ *
+ * The seed used to draw every building as its bounding rectangle, which is why
+ * the map showed boxes. We pull the published outlines instead and fall back to
+ * the rectangle only when the download is unavailable (e.g. seeding offline).
+ */
+async function loadFootprints(): Promise<Map<string, Footprint>> {
+  const byCode = new Map<string, Footprint>();
+  try {
+    const response = await fetch(BUILDING_SOURCE_URL);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const collection = (await response.json()) as {
+      features: Array<{
+        properties: { BLDG_CODE?: string | null };
+        geometry: Footprint | null;
+      }>;
+    };
+    for (const feature of collection.features) {
+      const code = feature.properties.BLDG_CODE;
+      if (code && feature.geometry) {
+        byCode.set(code, feature.geometry);
+      }
+    }
+  } catch (error) {
+    console.warn(
+      `Could not download UBC building footprints (${String(error)}). Falling back to rectangles.`,
+    );
+  }
+  return byCode;
+}
 
 type AttributeSeed = {
   key: (typeof ACCESSIBILITY_KEYS)[number];
@@ -612,38 +648,205 @@ const buildings: BuildingSeed[] = [
       },
     ],
   },
+{
+    sourceId: "seed-SHRM",
+    name: "Gordon B. Shrum Building",
+    code: "SHRM",
+    west: -123.247882,
+    south: 49.265365,
+    east: -123.246771,
+    north: 49.265898,
+    stepFreeAccess: "unknown",
+    hours: "Building hours not recorded.",
+    washrooms: [
+      {
+        name: "Basement all-gender stalls",
+        floor: "B",
+        directions:
+          "In the basement. Individual all-gender stalls, each with its own sink inside the stall.",
+        genderType: "all_gender",
+        attributes: facts(
+          {
+            // Only what the report actually establishes. Everything else stays
+            // unknown rather than being inferred from a self-contained stall.
+          },
+          "Community report, September 2026 — not yet verified on site",
+        ),
+      },
+    ],
+  },
+{
+    sourceId: "seed-GWHB",
+    name: "Gateway Health Building",
+    code: "GWHB",
+    west: -123.247088,
+    south: 49.266327,
+    east: -123.24592,
+    north: 49.267174,
+    stepFreeAccess: "yes",
+    hours: "Building hours not recorded.",
+    washrooms: [
+      {
+        name: "Main floor all-gender stalls",
+        floor: "1",
+        directions:
+          "On the main floor. Individual all-gender stalls, each with its own sink inside the stall, and towels provided.",
+        genderType: "all_gender",
+        attributes: facts(
+          {
+            stepFreeBuildingAccess: "yes",
+            accessibleStall: "yes",
+            grabBars: "yes",
+            transferSpace: "yes",
+            accessibleSink: "yes",
+            automaticDoor: "yes",
+            // Entry level, so no elevator serves it. changingTable stays unknown:
+            // a change table is an amenity, not an accessibility feature.
+            elevatorAccess: "no",
+          },
+          "Community report, September 2026 — not yet verified on site",
+        ),
+      },
+      {
+        name: "Basement all-gender stalls",
+        floor: "B",
+        directions:
+          "In the basement. Similar all-gender stalls with sinks inside the stall. The reporter believed this one is less accessible than the main floor washroom but was not certain, so no accessibility facts are recorded for it.",
+        genderType: "all_gender",
+        attributes: facts(
+          {
+            // Reported as "not as accessible, I think". An uncertain negative is
+            // still not a fact: recording "no" would be as wrong as recording
+            // "yes", so every field stays unknown until someone checks.
+          },
+          "Community report, September 2026 — unverified, accessibility not assessed",
+        ),
+      },
+    ],
+  },
+{
+    sourceId: "seed-WGR1",
+    name: "Walter H. Gage Residence - Commonsblock",
+    code: "WGR1",
+    west: -123.250322,
+    south: 49.269269,
+    east: -123.249334,
+    north: 49.269808,
+    stepFreeAccess: "unknown",
+    hours: "Building hours not recorded.",
+    washrooms: [
+      {
+        name: "Lobby accessible washroom 1",
+        floor: "1",
+        directions:
+          "One of two designated accessible washrooms off the Commonsblock lobby, separate from the men's and women's rooms.",
+        genderType: "all_gender",
+        attributes: facts(
+          {
+            // Reported as a designated accessible washroom. That establishes the
+            // stall itself; grab bars, transfer space, sink height and door type
+            // were not reported and stay unknown.
+            accessibleStall: "yes",
+            // Entry level, so no elevator serves it.
+            elevatorAccess: "no",
+          },
+          "Community report, September 2026 — not yet verified on site",
+        ),
+      },
+      {
+        name: "Lobby accessible washroom 2",
+        floor: "1",
+        directions:
+          "The second of two designated accessible washrooms off the Commonsblock lobby.",
+        genderType: "all_gender",
+        attributes: facts(
+          {
+            accessibleStall: "yes",
+            // Entry level, so no elevator serves it.
+            elevatorAccess: "no",
+          },
+          "Community report, September 2026 — not yet verified on site",
+        ),
+      },
+      {
+        name: "Lobby men's washroom",
+        floor: "1",
+        directions:
+          "Men's washroom in the Commonsblock lobby area. Reported as having an accessible stall.",
+        genderType: "mens",
+        attributes: facts(
+          {
+            accessibleStall: "yes",
+            // Entry level, so no elevator serves it.
+            elevatorAccess: "no",
+          },
+          "Community report, September 2026 — not yet verified on site",
+        ),
+      },
+      {
+        name: "Lobby women's washroom",
+        floor: "1",
+        directions:
+          "Women's washroom in the Commonsblock lobby area. Reported as having an accessible stall.",
+        genderType: "womens",
+        attributes: facts(
+          {
+            accessibleStall: "yes",
+            // Entry level, so no elevator serves it.
+            elevatorAccess: "no",
+          },
+          "Community report, September 2026 — not yet verified on site",
+        ),
+      },
+    ],
+  },
 ];
 
 async function seed() {
-  for (const building of buildings) {
-    const footprint = rectangleFootprint(building.west, building.south, building.east, building.north);
-    const centroidLat = (building.south + building.north) / 2;
-    const centroidLng = (building.west + building.east) / 2;
+  const footprints = await loadFootprints();
+  let realFootprints = 0;
 
-    const saved = await prisma.building.upsert({
-      where: { sourceId: building.sourceId },
-      update: {
-        name: building.name,
-        code: building.code,
-        centroidLat,
-        centroidLng,
-        footprint,
-        sourceUrl: BUILDING_SOURCE_URL,
-        stepFreeAccess: building.stepFreeAccess,
-        hours: building.hours,
-      },
-      create: {
-        sourceId: building.sourceId,
-        name: building.name,
-        code: building.code,
-        centroidLat,
-        centroidLng,
-        footprint,
-        sourceUrl: BUILDING_SOURCE_URL,
-        stepFreeAccess: building.stepFreeAccess,
-        hours: building.hours,
-      },
+  for (const building of buildings) {
+    const real = footprints.get(building.code);
+    const footprint = (real ??
+      rectangleFootprint(
+        building.west,
+        building.south,
+        building.east,
+        building.north,
+      )) as Prisma.InputJsonValue;
+    const centroid = real ? centroidOfGeometry(real) : null;
+    const centroidLat = centroid?.lat ?? (building.south + building.north) / 2;
+    const centroidLng = centroid?.lng ?? (building.west + building.east) / 2;
+    if (real) {
+      realFootprints += 1;
+    }
+
+    const shared = {
+      name: building.name,
+      code: building.code,
+      centroidLat,
+      centroidLng,
+      footprint,
+      sourceUrl: BUILDING_SOURCE_URL,
+      stepFreeAccess: building.stepFreeAccess,
+      hours: building.hours,
+    };
+
+    /*
+     * The buildings import may already have created this row under its real
+     * BLDG_UID. Matching on code as well as sourceId keeps the curated seed and
+     * the imported footprint on one building instead of two copies of it.
+     */
+    const existing = await prisma.building.findFirst({
+      where: { OR: [{ sourceId: building.sourceId }, { code: building.code }] },
     });
+
+    const saved = existing
+      ? await prisma.building.update({ where: { id: existing.id }, data: shared })
+      : await prisma.building.create({
+          data: { ...shared, sourceId: building.sourceId },
+        });
 
     for (const washroom of building.washrooms) {
       const existing = await prisma.washroom.findFirst({
@@ -689,7 +892,9 @@ async function seed() {
     }
   }
 
-  console.log(`Seeded ${buildings.length} buildings and their curated washrooms.`);
+  console.log(
+    `Seeded ${buildings.length} buildings (${realFootprints} with real UBC footprints) and their curated washrooms.`,
+  );
 }
 
 seed()
