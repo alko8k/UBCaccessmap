@@ -1,38 +1,58 @@
 import { useEffect, useRef } from "react";
 import maplibregl, { type GeoJSONSource, type Map as MapLibreMap } from "maplibre-gl";
 import { UBC_CAMPUS, type BuildingSummary, type WashroomSummary } from "@ubc-access-map/shared";
+import { RANK_COLORS, UNRANKED_COLOR } from "../../lib/ranks.ts";
+import { MAP_INK, darkCampusStyle } from "./mapStyle.ts";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 type Props = {
   buildings: BuildingSummary[];
   washrooms: WashroomSummary[];
   selectedWashroomId?: string;
+  selectedBuildingId?: string;
   onSelectWashroom: (id: string) => void;
+  onSelectBuilding: (id: string) => void;
   locateRequest: number;
 };
 
-const rankColor: Record<string, string> = {
-  S: "#c9a227",
-  A: "#1f7a4d",
-  B: "#215a8e",
-  C: "#b45309",
-  D: "#6b7280",
-};
+/**
+ * Paint a colour straight off a feature's `rank` property.
+ *
+ * Buildings, badges, and washroom dots all read from this, so a tier looks the
+ * same wherever it appears. Purple stays on the interface chrome only.
+ */
+const rankMatch: unknown[] = [
+  "match",
+  ["get", "rank"],
+  "S", RANK_COLORS.S,
+  "A", RANK_COLORS.A,
+  "B", RANK_COLORS.B,
+  "C", RANK_COLORS.C,
+  "D", RANK_COLORS.D,
+  UNRANKED_COLOR,
+];
 
 export function CampusMap({
   buildings,
   washrooms,
   selectedWashroomId,
+  selectedBuildingId,
   onSelectWashroom,
+  onSelectBuilding,
   locateRequest,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const onSelectRef = useRef(onSelectWashroom);
+  const onSelectBuildingRef = useRef(onSelectBuilding);
 
   useEffect(() => {
     onSelectRef.current = onSelectWashroom;
   }, [onSelectWashroom]);
+
+  useEffect(() => {
+    onSelectBuildingRef.current = onSelectBuilding;
+  }, [onSelectBuilding]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) {
@@ -41,7 +61,7 @@ export function CampusMap({
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: "https://tiles.openfreemap.org/styles/liberty",
+      style: darkCampusStyle,
       center: [UBC_CAMPUS.center.lng, UBC_CAMPUS.center.lat],
       zoom: UBC_CAMPUS.defaultZoom,
       maxBounds: [
@@ -60,6 +80,10 @@ export function CampusMap({
       "top-right",
     );
 
+    map.on("error", (event) => {
+      console.error("[map]", event.error?.message ?? event);
+    });
+
     map.on("load", () => {
       map.addSource("buildings", {
         type: "geojson",
@@ -69,14 +93,25 @@ export function CampusMap({
         type: "geojson",
         data: emptyCollection(),
       });
+      map.addSource("badges", {
+        type: "geojson",
+        data: emptyCollection(),
+      });
 
       map.addLayer({
         id: "building-fill",
         type: "fill",
         source: "buildings",
         paint: {
-          "fill-color": "#1d4f73",
-          "fill-opacity": 0.18,
+          "fill-color": rankMatch as never,
+          "fill-opacity": [
+            "case",
+            ["==", ["get", "selected"], 1],
+            0.42,
+            ["==", ["get", "mapped"], 1],
+            0.18,
+            0.05,
+          ],
         },
       });
       map.addLayer({
@@ -84,21 +119,97 @@ export function CampusMap({
         type: "line",
         source: "buildings",
         paint: {
-          "line-color": "#16364f",
-          "line-width": 1.2,
+          // Outline carries the rating, so a building's tier reads from its
+          // own edge without having to find the badge.
+          "line-color": rankMatch as never,
+          "line-width": ["case", ["==", ["get", "selected"], 1], 2.8, 1.4],
+          "line-opacity": [
+            "case",
+            ["==", ["get", "selected"], 1],
+            1,
+            ["==", ["get", "mapped"], 1],
+            0.9,
+            0.35,
+          ],
         },
       });
+      // Tier badge: a coloured medal sitting on each building.
+      map.addLayer({
+        id: "building-badge-glow",
+        type: "circle",
+        source: "badges",
+        paint: {
+          "circle-radius": ["case", ["==", ["get", "selected"], 1], 22, 16],
+          "circle-color": rankMatch as never,
+          "circle-opacity": ["case", ["==", ["get", "selected"], 1], 0.35, 0.16],
+          "circle-blur": 0.6,
+        },
+      });
+      map.addLayer({
+        id: "building-badge",
+        type: "circle",
+        source: "badges",
+        paint: {
+          "circle-radius": ["case", ["==", ["get", "selected"], 1], 15, 12],
+          "circle-color": rankMatch as never,
+          "circle-stroke-width": 2,
+          "circle-stroke-color": MAP_INK,
+        },
+      });
+      map.addLayer({
+        id: "building-badge-letter",
+        type: "symbol",
+        source: "badges",
+        layout: {
+          "text-field": ["get", "label"],
+          "text-font": ["Noto Sans Bold"],
+          "text-size": ["case", ["==", ["get", "selected"], 1], 15, 13],
+          "text-allow-overlap": true,
+        },
+        paint: { "text-color": MAP_INK },
+      });
+
+      // Individual washrooms only appear once a building is opened.
       map.addLayer({
         id: "washroom-dots",
         type: "circle",
         source: "washrooms",
         paint: {
-          "circle-radius": ["case", ["==", ["get", "selected"], 1], 10, 7],
-          "circle-color": ["get", "color"],
+          "circle-radius": ["case", ["==", ["get", "selected"], 1], 8, 6],
+          "circle-color": rankMatch as never,
           "circle-stroke-width": 2,
-          "circle-stroke-color": "#ffffff",
+          "circle-stroke-color": MAP_INK,
         },
       });
+    });
+
+    for (const layer of ["building-badge", "building-badge-letter"]) {
+      map.on("click", layer, (event) => {
+        const id = event.features?.[0]?.properties?.id;
+        if (typeof id === "string") {
+          onSelectBuildingRef.current(id);
+        }
+      });
+      map.on("mouseenter", layer, () => {
+        map.getCanvas().style.cursor = "pointer";
+      });
+      map.on("mouseleave", layer, () => {
+        map.getCanvas().style.cursor = "";
+      });
+    }
+
+    map.on("click", "building-fill", (event) => {
+      const id = event.features?.[0]?.properties?.id;
+      if (typeof id === "string") {
+        onSelectBuildingRef.current(id);
+      }
+    });
+
+    map.on("mouseenter", "building-fill", () => {
+      map.getCanvas().style.cursor = "pointer";
+    });
+    map.on("mouseleave", "building-fill", () => {
+      map.getCanvas().style.cursor = "";
     });
 
     map.on("click", "washroom-dots", (event) => {
@@ -125,13 +236,23 @@ export function CampusMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!map?.getSource("buildings")) {
-      const handleLoad = () => updateSources(mapRef.current, buildings, washrooms, selectedWashroomId);
+      const handleLoad = () =>
+        updateSources(mapRef.current, buildings, washrooms, selectedWashroomId, selectedBuildingId);
       map?.once("load", handleLoad);
       return;
     }
 
-    updateSources(map, buildings, washrooms, selectedWashroomId);
-  }, [buildings, washrooms, selectedWashroomId]);
+    updateSources(map, buildings, washrooms, selectedWashroomId, selectedBuildingId);
+
+    for (const layer of ["building-badge-glow", "building-badge", "building-badge-letter"]) {
+      if (map.getLayer(layer)) {
+        map.setFilter(
+          layer,
+          selectedBuildingId ? ["!=", ["get", "id"], selectedBuildingId] : null,
+        );
+      }
+    }
+  }, [buildings, washrooms, selectedWashroomId, selectedBuildingId]);
 
   useEffect(() => {
     if (locateRequest === 0 || !navigator.geolocation) {
@@ -177,11 +298,13 @@ function updateSources(
   buildings: BuildingSummary[],
   washrooms: WashroomSummary[],
   selectedWashroomId?: string,
+  selectedBuildingId?: string,
 ) {
   if (!map) return;
   const buildingSource = map.getSource("buildings") as GeoJSONSource | undefined;
   const washroomSource = map.getSource("washrooms") as GeoJSONSource | undefined;
-  if (!buildingSource || !washroomSource) return;
+  const badgeSource = map.getSource("badges") as GeoJSONSource | undefined;
+  if (!buildingSource || !washroomSource || !badgeSource) return;
 
   buildingSource.setData({
     type: "FeatureCollection",
@@ -193,29 +316,79 @@ function updateSources(
       return [
         {
           type: "Feature" as const,
-          properties: { id: building.id, name: building.name },
+          properties: {
+            id: building.id,
+            name: building.name,
+            rank: building.bestRank ?? "",
+            mapped: building.washroomCount > 0 ? 1 : 0,
+            selected: building.id === selectedBuildingId ? 1 : 0,
+          },
           geometry,
         },
       ];
     }),
   });
 
+  // One badge per building, carrying its best rank.
+  badgeSource.setData({
+    type: "FeatureCollection",
+    features: buildings
+      .filter((building) => building.washroomCount > 0)
+      .map((building) => ({
+        type: "Feature" as const,
+        properties: {
+          id: building.id,
+          rank: building.bestRank ?? "",
+          label: building.bestRank ?? "?",
+          selected: building.id === selectedBuildingId ? 1 : 0,
+        },
+        geometry: {
+          type: "Point",
+          coordinates: [building.centroidLng, building.centroidLat],
+        },
+      })),
+  });
+
+  // Washroom dots are the opened-building view, so everything else stays clean.
+  const openWashrooms = selectedBuildingId
+    ? washrooms.filter((washroom) => washroom.buildingId === selectedBuildingId)
+    : [];
+
   washroomSource.setData({
     type: "FeatureCollection",
-    features: washrooms.map((washroom, index) => ({
+    features: openWashrooms.map((washroom) => ({
       type: "Feature" as const,
       properties: {
         id: washroom.id,
+        rank: washroom.rankLetter ?? "",
         selected: washroom.id === selectedWashroomId ? 1 : 0,
-        color: rankColor[washroom.rankLetter ?? ""] ?? "#334155",
       },
       geometry: {
         type: "Point",
-        coordinates: [
-          washroom.longitude + index * 0.00004,
-          washroom.latitude + index * 0.00003,
-        ],
+        coordinates: spread(washroom, openWashrooms),
       },
     })),
   });
+}
+
+/**
+ * Washrooms in one building often share a coordinate, so identical points are
+ * fanned out around it. The offset is derived from the washroom's rank within
+ * its own cluster rather than its index in the whole list, which previously
+ * dragged later markers steadily off their real location.
+ */
+function spread(washroom: WashroomSummary, all: WashroomSummary[]): [number, number] {
+  const key = (item: WashroomSummary) => `${item.longitude},${item.latitude}`;
+  const cluster = all.filter((item) => key(item) === key(washroom));
+  if (cluster.length < 2) {
+    return [washroom.longitude, washroom.latitude];
+  }
+
+  const position = cluster.findIndex((item) => item.id === washroom.id);
+  const angle = (position / cluster.length) * Math.PI * 2;
+  const radius = 0.00006;
+  return [
+    washroom.longitude + Math.cos(angle) * radius,
+    washroom.latitude + Math.sin(angle) * radius * 0.65,
+  ];
 }

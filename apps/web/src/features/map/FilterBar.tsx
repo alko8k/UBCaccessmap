@@ -12,10 +12,9 @@ const checkboxFilters: Array<{ key: keyof FilterState; label: string }> = [
 type Props = {
   filters: FilterState;
   onChange: (filters: FilterState) => void;
-  resultCount: number;
 };
 
-export function FilterBar({ filters, onChange, resultCount }: Props) {
+export function FilterBar({ filters, onChange }: Props) {
   return (
     <form className="filter-bar" onSubmit={(event) => event.preventDefault()}>
       <div className="filter-search">
@@ -29,7 +28,9 @@ export function FilterBar({ filters, onChange, resultCount }: Props) {
         />
       </div>
 
-      <div className="filter-selects">
+      <section className="filter-group">
+        <h2 className="group-label">Refine</h2>
+        <div className="filter-selects">
         <label>
           Community rank
           <select
@@ -64,11 +65,28 @@ export function FilterBar({ filters, onChange, resultCount }: Props) {
             <option value="mens">Men’s</option>
           </select>
         </label>
-      </div>
+        </div>
+      </section>
 
-      <fieldset>
-        <legend>Accessibility facts</legend>
-        <p className="hint">These filters use documented attributes, not community scores.</p>
+      <section className="filter-group">
+        <h2 className="group-label">Tiers</h2>
+        <ul className="tier-legend" aria-label="Rank tiers, best to worst">
+          {(["S", "A", "B", "C", "D"] as const).map((letter) => (
+            <li key={letter}>
+              <span aria-hidden="true" />
+              {letter}
+            </li>
+          ))}
+        </ul>
+        <p className="clickable-key">
+          <span aria-hidden="true" />
+          Outlined buildings open a washroom list. Colour shows their best tier.
+        </p>
+      </section>
+
+      <fieldset className="filter-group">
+        <legend className="group-label">Accessibility facts</legend>
+        <p className="hint">Documented attributes, not community scores.</p>
         <div className="filter-checks">
           {checkboxFilters.map((filter) => (
             <label key={filter.key} className="check">
@@ -84,10 +102,6 @@ export function FilterBar({ filters, onChange, resultCount }: Props) {
           ))}
         </div>
       </fieldset>
-
-      <p className="result-count" aria-live="polite">
-        {resultCount} matching washroom{resultCount === 1 ? "" : "s"}
-      </p>
     </form>
   );
 }
