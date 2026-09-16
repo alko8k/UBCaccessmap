@@ -1,17 +1,45 @@
 @import "tailwindcss";
 
 :root {
-  color-scheme: light;
-  --ink: #12202c;
-  --muted: #3d4f5c;
-  --paper: #f4efe4;
-  --panel: #fffdf8;
-  --line: #d5c9b4;
-  --accent: #1d4f73;
-  --accent-2: #c9a227;
-  --danger: #8f2d2d;
-  --focus: #0b3d62;
-  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Times New Roman", serif;
+  color-scheme: dark;
+
+/* Black ground, purple accent. Neutrals carry a slight violet cast so the
+   * accent reads as part of the palette rather than a sticker on grey. */
+  --ink: #efecf7;
+  --ink-2: #a49cbd;
+  --ink-3: #746c8c;
+  --line: #221d33;
+  --line-2: #332b4a;
+  --paper: #08070c;
+  --panel: #100d18;
+  --wash: #191430;
+
+  /* The accent. Purple means interactive: links, focus, selection, and the
+   * clickable building outlines on the map. */
+  --purple: #a970ff;
+  --purple-bright: #c9a4ff;
+  --purple-dim: #6d4aa8;
+
+  /* Tier ramp: red (D) through green (S). Mirrors lib/ranks.ts. */
+  --rank-S: #35d07f;
+  --rank-A: #a3d939;
+  --rank-B: #f2c53d;
+  --rank-C: #f0883a;
+  --rank-D: #e5484d;
+  --rank-none: #6d757a;
+
+  /* Type scale — five steps, nothing in between. */
+  --fs-xs: 0.72rem;
+  --fs-sm: 0.8rem;
+  --fs-md: 0.875rem;
+  --fs-lg: 1rem;
+  --fs-xl: 1.3rem;
+
+  font-family: "Inter Variable", Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Helvetica, Arial, sans-serif;
+  font-synthesis-weight: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 * {
@@ -28,6 +56,24 @@ body {
   margin: 0;
   background: var(--paper);
   color: var(--ink);
+  font-size: var(--fs-md);
+  line-height: 1.55;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.5rem;
+}
+
+h1 { font-size: var(--fs-xl); }
+h2 { font-size: var(--fs-lg); }
+h3 { font-size: var(--fs-md); }
+
+p {
+  margin: 0 0 0.75rem;
 }
 
 button,
@@ -38,11 +84,17 @@ textarea {
 }
 
 a {
-  color: var(--accent);
+  color: var(--purple-bright);
+  text-underline-offset: 3px;
+  text-decoration-color: var(--purple-dim);
+}
+
+a:hover {
+  text-decoration-color: var(--purple-bright);
 }
 
 :focus-visible {
-  outline: 3px solid var(--focus);
+  outline: 2px solid var(--purple);
   outline-offset: 2px;
 }
 
@@ -50,7 +102,8 @@ a {
   position: absolute;
   left: 0.75rem;
   top: -3rem;
-  background: white;
+  background: var(--paper);
+  border: 1px solid var(--ink);
   padding: 0.5rem 0.75rem;
   z-index: 20;
 }
@@ -60,72 +113,106 @@ a {
 }
 
 .site {
-  min-height: 100svh;
+  height: 100svh;
   display: grid;
   grid-template-rows: auto 1fr auto;
-}
-
-.topbar,
-.footer {
-  padding: 0.9rem 1.2rem;
-  background: #102333;
-  color: #f6f1e6;
+  overflow: hidden;
 }
 
 .topbar {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
-  align-items: end;
+  align-items: center;
   flex-wrap: wrap;
+  padding: 0.85rem 1.25rem;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+
+.footer {
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--line);
+  color: var(--ink-3);
+  font-size: var(--fs-xs);
 }
 
 .brand {
-  color: #fff;
+  display: block;
+  color: var(--ink);
   text-decoration: none;
-  font-size: 1.4rem;
-  letter-spacing: 0.02em;
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
-.tagline,
-.footer {
-  font-size: 0.92rem;
-  color: #d7cbb4;
+.tagline {
+  margin: 0.1rem 0 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-3);
 }
 
 .topbar nav {
   display: flex;
-  gap: 1rem;
+  gap: 1.1rem;
   align-items: center;
   flex-wrap: wrap;
+  font-size: var(--fs-sm);
 }
 
 .topbar nav a,
 .text-btn {
-  color: #f3ead7;
+  color: var(--ink-2);
   background: none;
   border: 0;
   padding: 0;
   cursor: pointer;
-  text-decoration: underline;
+  text-decoration: none;
+}
+
+.topbar nav a:hover,
+.text-btn:hover {
+  color: var(--purple-bright);
 }
 
 .app-shell {
   display: grid;
-  grid-template-columns: minmax(280px, 360px) 1fr;
-  min-height: calc(100svh - 8rem);
+  grid-template-columns: minmax(280px, 340px) 1fr;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .sidebar,
-.panel,
 .page {
-  padding: 1rem 1.1rem;
+  padding: 1.25rem;
   background: var(--panel);
 }
 
 .sidebar {
   border-right: 1px solid var(--line);
-  overflow: auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Section labels: the one repeated cue that carries the hierarchy. */
+.group-label {
+  margin: 0 0 0.6rem;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.filter-group {
+  margin: 0 0 1.4rem;
+  padding: 0;
+  border: 0;
+}
+
+.filter-group .hint {
+  margin: -0.35rem 0 0.7rem;
 }
 
 .filter-bar label,
@@ -133,8 +220,18 @@ a {
 .vote-form label,
 .report-form label {
   display: grid;
-  gap: 0.25rem;
-  font-size: 0.95rem;
+  gap: 0.3rem;
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.filter-bar legend {
+  padding: 0;
+}
+
+.filter-search {
+  margin-bottom: 1.4rem;
 }
 
 .filter-search,
@@ -143,7 +240,7 @@ a {
 .vote-form,
 .report-form {
   display: grid;
-  gap: 0.7rem;
+  gap: 0.6rem;
   margin-bottom: 1rem;
 }
 
@@ -153,47 +250,100 @@ a {
 
 .filter-checks {
   grid-template-columns: 1fr;
+  gap: 0.4rem;
 }
 
+/*
+ * Needs to out-specify `.filter-bar label`, which is a grid — otherwise the
+ * box stacks above its text instead of sitting beside it.
+ */
+.filter-bar label.check,
+.vote-form label.check,
 .check {
   display: flex;
   gap: 0.5rem;
   align-items: center;
+  font-size: var(--fs-md);
+  font-weight: 400;
+  color: var(--ink);
+}
+
+.check input {
+  accent-color: var(--purple);
 }
 
 input,
 select,
 textarea,
 button:not(.text-btn) {
-  border: 1px solid #7d8b95;
-  border-radius: 0.4rem;
-  padding: 0.45rem 0.55rem;
-  background: white;
+  border: 1px solid var(--line-2);
+  border-radius: 2px;
+  padding: 0.4rem 0.5rem;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: var(--fs-md);
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: var(--purple-dim);
 }
 
 button:not(.text-btn) {
-  background: var(--accent);
-  color: white;
-  border-color: var(--accent);
+  background: var(--paper);
+  color: var(--ink-2);
   cursor: pointer;
 }
 
+button:not(.text-btn):hover {
+  border-color: var(--purple);
+  color: var(--purple-bright);
+}
+
 button[aria-pressed="true"] {
-  background: #16364f;
+  background: var(--purple);
+  border-color: var(--purple);
+  color: #12091f;
 }
 
 .hint,
 .eyebrow,
 .result-count {
-  color: var(--muted);
-  font-size: 0.9rem;
+  color: var(--ink-3);
+  font-size: var(--fs-xs);
+}
+
+.results-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 0 -1.25rem;
+  padding: 0.6rem 1.25rem;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.result-count {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
 }
 
 .view-toggle {
   display: flex;
-  gap: 0.4rem;
-  margin-bottom: 1rem;
+  gap: 0.35rem;
   flex-wrap: wrap;
+}
+
+.view-toggle button {
+  font-size: var(--fs-xs);
+  padding: 0.28rem 0.55rem;
 }
 
 .result-list {
@@ -206,71 +356,258 @@ button[aria-pressed="true"] {
   width: 100%;
   display: flex;
   gap: 0.7rem;
+  align-items: center;
   text-align: left;
-  background: white;
+  background: none;
   color: var(--ink);
-  border: 1px solid var(--line);
-  margin-bottom: 0.5rem;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  margin: 0 -1.25rem;
+  padding: 0.7rem 1.25rem;
+}
+
+/* Rows nested in the building panel sit inside a section, not the sidebar. */
+.result-list--panel {
+  border-top: 1px solid var(--line);
+}
+
+.result-list--panel button {
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+  margin: 0;
+}
+
+.result-list button:hover {
+  background: var(--wash);
+  color: var(--ink);
 }
 
 .result-list button.selected {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px #1d4f7333;
+  box-shadow: inset 2px 0 0 var(--purple);
+  background: var(--wash);
+}
+
+.result-list button:has(.rank-S) strong {
+  color: var(--rank-S);
+}
+
+.result-list strong {
+  font-weight: 500;
 }
 
 .result-list em {
   display: block;
   font-style: normal;
-  color: var(--muted);
-  font-size: 0.88rem;
+  color: var(--ink-3);
+  font-size: var(--fs-xs);
 }
 
+/* Tier medal. Colour carries the ramp, the letter carries the meaning. */
 .rank {
-  min-width: 2rem;
-  height: 2rem;
+  --tier: var(--rank-none);
+  min-width: 1.75rem;
+  height: 1.75rem;
   display: grid;
   place-items: center;
   border-radius: 999px;
-  background: #e7e0d2;
-  font-family: ui-sans-serif, system-ui, sans-serif;
+  border: 1.5px solid var(--tier);
+  background: color-mix(in srgb, var(--tier) 18%, transparent);
+  color: var(--tier);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tier) 10%, transparent);
 }
 
-.rank-S { background: #c9a227; color: #1b1403; }
-.rank-A { background: #1f7a4d; color: white; }
-.rank-B { background: #215a8e; color: white; }
-.rank-C { background: #b45309; color: white; }
-.rank-D { background: #6b7280; color: white; }
+.rank-S { --tier: var(--rank-S); }
+.rank-A { --tier: var(--rank-A); }
+.rank-B { --tier: var(--rank-B); }
+.rank-C { --tier: var(--rank-C); }
+.rank-D { --tier: var(--rank-D); }
+
+/* The S medal is the trophy: filled, not outlined. */
+.rank-S {
+  background: var(--rank-S);
+  color: #06210f;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rank-S) 22%, transparent),
+    0 0 14px color-mix(in srgb, var(--rank-S) 45%, transparent);
+}
+
+/* Big medal for the detail panel. */
+.rank-large {
+  min-width: 3.1rem;
+  height: 3.1rem;
+  font-size: 1.35rem;
+}
+
+.coverage {
+  margin: 0 0 1.3rem;
+}
+
+.coverage-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.coverage-head .group-label {
+  margin: 0;
+}
+
+.coverage-head strong {
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.coverage .hint {
+  margin: 0.4rem 0 0;
+}
+
+/* Tier ramp legend under the filters. */
+.tier-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0 0 1.4rem;
+  padding: 0;
+  list-style: none;
+}
+
+.tier-legend li {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  gap: 0.3rem;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--tier);
+}
+
+.tier-legend span {
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--tier);
+}
+
+.tier-legend li:nth-child(1) { --tier: var(--rank-S); }
+.tier-legend li:nth-child(2) { --tier: var(--rank-A); }
+.tier-legend li:nth-child(3) { --tier: var(--rank-B); }
+.tier-legend li:nth-child(4) { --tier: var(--rank-C); }
+.tier-legend li:nth-child(5) { --tier: var(--rank-D); }
+
+/* Progress toward the next tier. */
+.tier-meter {
+  height: 5px;
+  margin-top: 0.5rem;
+  border-radius: 999px;
+  background: var(--wash);
+  overflow: hidden;
+}
+
+.tier-meter i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--rank-D), var(--rank-B), var(--rank-S));
+}
+
+/* Legend note for the purple affordance used on the map. */
+.clickable-key {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1.4rem;
+  font-size: var(--fs-xs);
+  color: var(--ink-3);
+}
+
+/* Swatch mirrors a mapped building: tier-coloured edge, faint fill. */
+.clickable-key span {
+  width: 1.6rem;
+  height: 0.9rem;
+  flex: none;
+  border: 1.5px solid var(--rank-A);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--rank-A) 18%, transparent);
+}
 
 .map-area {
   position: relative;
-  min-height: 70svh;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .map-shell,
 .map-canvas {
   width: 100%;
   height: 100%;
-  min-height: 70svh;
 }
 
 .panel {
   position: absolute;
   right: 0;
   top: 0;
-  width: min(420px, 100%);
+  width: min(400px, 100%);
   height: 100%;
-  overflow: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border-left: 1px solid var(--line);
-  box-shadow: -8px 0 24px #10233314;
+  background: var(--panel);
+}
+
+.sidebar,
+.panel {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-2) transparent;
+}
+
+.panel-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1.25rem;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+.panel-body {
+  padding: 1.1rem 1.25rem 2rem;
+}
+
+.panel-section {
+  margin-top: 1.6rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--line);
+}
+
+.meta {
+  margin: 0.15rem 0 0.6rem;
+  color: var(--ink-2);
+}
+
+.notice {
+  margin-top: 0.8rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--line-2);
+  border-radius: 2px;
+  color: var(--ink-2);
+  font-size: var(--fs-sm);
 }
 
 .rank-box,
 .fact-list,
 .report-list li {
   border: 1px solid var(--line);
-  border-radius: 0.6rem;
+  border-radius: 2px;
   padding: 0.8rem;
-  background: #fff;
+  background: var(--paper);
 }
 
 .rank-box {
@@ -283,7 +620,9 @@ button[aria-pressed="true"] {
 .fact-list {
   list-style: none;
   display: grid;
-  gap: 0.45rem;
+  gap: 0.4rem;
+  margin: 0 0 1rem;
+  font-size: var(--fs-md);
 }
 
 .fact-list li {
@@ -292,15 +631,32 @@ button[aria-pressed="true"] {
   gap: 1rem;
 }
 
-.fact-list b[data-state="unknown"] {
-  color: var(--muted);
+.fact-list b {
   font-weight: 500;
+}
+
+.fact-list b[data-state="unknown"] {
+  color: var(--ink-3);
+  font-weight: 400;
+}
+
+.directions {
+  font-size: var(--fs-md);
+  color: var(--ink-2);
+}
+
+.report-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.6rem;
 }
 
 .dialog-backdrop {
   position: fixed;
   inset: 0;
-  background: #10233366;
+  background: #05040acc;
   display: grid;
   place-items: center;
   padding: 1rem;
@@ -309,29 +665,95 @@ button[aria-pressed="true"] {
 
 .dialog,
 .page {
-  max-width: 720px;
+  max-width: 640px;
 }
 
 .dialog {
   background: var(--panel);
-  padding: 1.2rem;
-  border-radius: 0.7rem;
+  border: 1px solid var(--line-2);
+  padding: 1.25rem;
+  border-radius: 2px;
 }
 
 .dialog-actions {
   display: flex;
-  gap: 0.7rem;
+  gap: 0.5rem;
   margin-top: 0.8rem;
+}
+
+.page {
+  margin: 0 auto;
+  padding-block: 2rem;
 }
 
 .prose p,
 .prose h2 {
-  line-height: 1.55;
+  line-height: 1.6;
+}
+
+.prose p {
+  color: var(--ink-2);
+}
+
+/* MapLibre controls, flattened and darkened to match. */
+.maplibregl-ctrl-group {
+  background: var(--panel) !important;
+  border-radius: 2px !important;
+  box-shadow: 0 0 0 1px var(--line-2) !important;
+}
+
+.maplibregl-ctrl-group button {
+  background: transparent !important;
+}
+
+.maplibregl-ctrl-group button + button {
+  border-top: 1px solid var(--line) !important;
+}
+
+.maplibregl-ctrl-group button:hover {
+  background: var(--wash) !important;
+}
+
+.maplibregl-ctrl-icon {
+  filter: invert(1);
+}
+
+.maplibregl-ctrl-attrib {
+  background: #14171999 !important;
+  color: var(--ink-3);
+}
+
+.maplibregl-ctrl-attrib a {
+  color: var(--ink-2);
+}
+
+.maplibregl-ctrl-attrib-button {
+  filter: invert(1);
 }
 
 @media (max-width: 900px) {
+  .site {
+    height: auto;
+    min-height: 100svh;
+    overflow: visible;
+  }
+
   .app-shell {
     grid-template-columns: 1fr;
+    overflow: visible;
+  }
+
+  .sidebar {
+    overflow: visible;
+  }
+
+  .results-head,
+  .panel-head {
+    position: static;
+  }
+
+  .map-area {
+    min-height: 60svh;
   }
 
   .map-area.list-only .map-shell {
@@ -342,6 +764,8 @@ button[aria-pressed="true"] {
     position: static;
     width: 100%;
     height: auto;
+    border-left: 0;
+    border-top: 1px solid var(--line);
   }
 }
 

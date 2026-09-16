@@ -62,154 +62,173 @@ export function DetailPanel({ washroomId, onClose, onNeedAuth }: Props) {
   return (
     <section className="panel" aria-labelledby="washroom-heading">
       <div className="panel-head">
-        <button type="button" className="text-btn" onClick={onClose}>
-          Close details
+        <p className="eyebrow">
+          {washroom
+            ? `${washroom.buildingName}${washroom.buildingCode ? ` · ${washroom.buildingCode}` : ""}`
+            : "Washroom"}
+        </p>
+        <button type="button" className="text-btn" onClick={onClose} aria-label="Close details">
+          Close
         </button>
       </div>
 
-      {detailQuery.isLoading && <p>Loading washroom details…</p>}
-      {detailQuery.isError && <p role="alert">Could not load that washroom.</p>}
+      <div className="panel-body">
+        {detailQuery.isLoading && <p>Loading washroom details…</p>}
+        {detailQuery.isError && <p role="alert">Could not load that washroom.</p>}
 
-      {washroom && (
-        <>
-          <p className="eyebrow">
-            {washroom.buildingName}
-            {washroom.buildingCode ? ` · ${washroom.buildingCode}` : ""}
-          </p>
-          <h2 id="washroom-heading">{washroom.name}</h2>
-          <p>
-            Floor {washroom.floor} · {genderLabel(washroom.genderType)}
-          </p>
-          <p className="directions">{washroom.directions}</p>
-          {washroom.hours && <p>Hours: {washroom.hours}</p>}
+        {washroom && (
+          <>
+            <h2 id="washroom-heading">{washroom.name}</h2>
+            <p className="meta">
+              Floor {washroom.floor} · {genderLabel(washroom.genderType)}
+              {washroom.hours ? ` · ${washroom.hours}` : ""}
+            </p>
+            <p className="directions">{washroom.directions}</p>
 
-          <div className="rank-box">
-            <strong className={`rank rank-${washroom.rankLetter ?? "none"}`}>
-              {washroom.rankLetter ?? "—"}
-            </strong>
-            <div>
-              <p>Community experience rank</p>
-              <p>
-                {washroom.voteCount} vote{washroom.voteCount === 1 ? "" : "s"} · {washroom.confidence}{" "}
-                confidence
-              </p>
-              <p className="hint">
-                Rank is Bayesian-weighted so a single vote cannot produce an S. It is not an
-                accessibility rating.
-              </p>
+            <div className="rank-box">
+              <strong className={`rank rank-large rank-${washroom.rankLetter ?? "none"}`}>
+                {washroom.rankLetter ?? "—"}
+              </strong>
+              <div>
+                <p>Community experience rank</p>
+                <p>
+                  {washroom.voteCount} vote{washroom.voteCount === 1 ? "" : "s"} · {washroom.confidence}{" "}
+                  confidence
+                </p>
+                <div
+                  className="tier-meter"
+                  role="progressbar"
+                  aria-label="Confidence in this rank"
+                  aria-valuemin={0}
+                  aria-valuemax={10}
+                  aria-valuenow={Math.min(washroom.voteCount, 10)}
+                >
+                  <i style={{ width: `${Math.min(washroom.voteCount / 10, 1) * 100}%` }} />
+                </div>
+                <p className="hint">
+                  Rank is Bayesian-weighted so a single vote cannot produce an S. It is not an
+                  accessibility rating.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <h3>Accessibility facts</h3>
-          <ul className="fact-list">
-            {washroom.attributes.map((attribute) => (
-              <li key={attribute.key}>
-                <span>{attributeLabels[attribute.key] ?? attribute.key}</span>
-                <b data-state={attribute.value}>{factLabel(attribute.value)}</b>
-              </li>
-            ))}
-          </ul>
-          <p className="hint">
-            Source: {washroom.attributeSource ?? "Not recorded"}
-            {washroom.lastVerifiedAt
-              ? ` · last verified ${new Date(washroom.lastVerifiedAt).toLocaleDateString()}`
-              : ""}
-            . Unknown means we have not confirmed it.
-          </p>
+            <section className="panel-section">
+              <h3 className="group-label">Accessibility facts</h3>
+              <ul className="fact-list">
+                {washroom.attributes.map((attribute) => (
+                  <li key={attribute.key}>
+                    <span>{attributeLabels[attribute.key] ?? attribute.key}</span>
+                    <b data-state={attribute.value}>{factLabel(attribute.value)}</b>
+                  </li>
+                ))}
+              </ul>
+              <p className="hint">
+                Source: {washroom.attributeSource ?? "Not recorded"}
+                {washroom.lastVerifiedAt
+                  ? ` · last verified ${new Date(washroom.lastVerifiedAt).toLocaleDateString()}`
+                  : ""}
+                . Unknown means we have not confirmed it.
+              </p>
+            </section>
 
-          <h3>Vote</h3>
-          {user ? (
-            <form
-              className="vote-form"
-              onSubmit={(event) => {
-                event.preventDefault();
-                vote.mutate(rating);
-              }}
-            >
-              {(["cleanliness", "privacy", "availability", "overall"] as const).map((field) => (
-                <label key={field}>
-                  {field}
-                  <input
-                    type="range"
-                    min={1}
-                    max={5}
-                    value={rating[field]}
-                    onChange={(event) =>
-                      setRating({ ...rating, [field]: Number(event.target.value) })
-                    }
-                  />
-                  <span>{rating[field]}</span>
-                </label>
-              ))}
-              <fieldset>
-                <legend>Optional tags</legend>
-                <div className="filter-checks">
-                  {RATING_TAGS.map((tag) => (
-                    <label key={tag} className="check">
+            <section className="panel-section">
+              <h3 className="group-label">Vote</h3>
+              {user ? (
+                <form
+                  className="vote-form"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    vote.mutate(rating);
+                  }}
+                >
+                  {(["cleanliness", "privacy", "availability", "overall"] as const).map((field) => (
+                    <label key={field}>
+                      {field}
                       <input
-                        type="checkbox"
-                        checked={rating.tags.includes(tag)}
-                        onChange={(event) => {
-                          setRating({
-                            ...rating,
-                            tags: event.target.checked
-                              ? [...rating.tags, tag]
-                              : rating.tags.filter((value) => value !== tag),
-                          });
-                        }}
+                        type="range"
+                        min={1}
+                        max={5}
+                        value={rating[field]}
+                        onChange={(event) =>
+                          setRating({ ...rating, [field]: Number(event.target.value) })
+                        }
                       />
-                      {tag}
+                      <span>{rating[field]}</span>
                     </label>
                   ))}
-                </div>
-              </fieldset>
-              <button type="submit" disabled={vote.isPending}>
-                {washroom.viewerRating ? "Update my vote" : "Submit vote"}
-              </button>
-            </form>
-          ) : (
-            <p>
-              <button type="button" onClick={onNeedAuth}>
-                Verify a UBC email to vote
-              </button>
-            </p>
-          )}
+                  <fieldset>
+                    <legend>Optional tags</legend>
+                    <div className="filter-checks">
+                      {RATING_TAGS.map((tag) => (
+                        <label key={tag} className="check">
+                          <input
+                            type="checkbox"
+                            checked={rating.tags.includes(tag)}
+                            onChange={(event) => {
+                              setRating({
+                                ...rating,
+                                tags: event.target.checked
+                                  ? [...rating.tags, tag]
+                                  : rating.tags.filter((value) => value !== tag),
+                              });
+                            }}
+                          />
+                          {tag}
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                  <button type="submit" disabled={vote.isPending}>
+                    {washroom.viewerRating ? "Update my vote" : "Submit vote"}
+                  </button>
+                </form>
+              ) : (
+                <p>
+                  <button type="button" onClick={onNeedAuth}>
+                    Verify a UBC email to vote
+                  </button>
+                </p>
+              )}
+            </section>
 
-          <h3>Report a correction</h3>
-          <form
-            className="report-form"
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (!user) {
-                onNeedAuth();
-                return;
-              }
-              report.mutate();
-            }}
-          >
-            <label>
-              What is wrong?
-              <select value={reportType} onChange={(event) => setReportType(event.target.value)}>
-                <option value="incorrect_access">Accessibility fact is wrong</option>
-                <option value="closed">Closed or unavailable</option>
-                <option value="directions">Directions need an update</option>
-                <option value="other">Other</option>
-              </select>
-            </label>
-            <label>
-              Details
-              <textarea
-                required
-                minLength={8}
-                value={reportMessage}
-                onChange={(event) => setReportMessage(event.target.value)}
-              />
-            </label>
-            <button type="submit">Send report</button>
-          </form>
-          {notice && <p role="status">{notice}</p>}
-        </>
-      )}
+            <section className="panel-section">
+              <h3 className="group-label">Report a correction</h3>
+              <form
+                className="report-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (!user) {
+                    onNeedAuth();
+                    return;
+                  }
+                  report.mutate();
+                }}
+              >
+                <label>
+                  What is wrong?
+                  <select value={reportType} onChange={(event) => setReportType(event.target.value)}>
+                    <option value="incorrect_access">Accessibility fact is wrong</option>
+                    <option value="closed">Closed or unavailable</option>
+                    <option value="directions">Directions need an update</option>
+                    <option value="other">Other</option>
+                  </select>
+                </label>
+                <label>
+                  Details
+                  <textarea
+                    required
+                    minLength={8}
+                    value={reportMessage}
+                    onChange={(event) => setReportMessage(event.target.value)}
+                  />
+                </label>
+                <button type="submit">Send report</button>
+              </form>
+              {notice && <p role="status" className="notice">{notice}</p>}
+            </section>
+          </>
+        )}
+      </div>
     </section>
   );
 }
